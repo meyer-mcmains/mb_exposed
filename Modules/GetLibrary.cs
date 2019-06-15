@@ -1,41 +1,107 @@
 ﻿using Nancy;
+using System.Collections.Generic;
+using Utf8Json;
+using static MusicBeePlugin.Plugin;
 
 namespace MusicBeePlugin
 {
-    public class GetLibrary
+    public class GetLibrary : NancyModule
     {
-        private string temp;
-        private static readonly object _syncLock = new object();
-        private static GetLibrary _instance;
+        private MusicBeeApiInterface mbApi = MbApiInstance.Instance.MusicBeeApiInterface;
 
-        public static GetLibrary Instance
+        public GetLibrary()
         {
-            get
+            Get["/library"] = _ => ExportLibrary();
+        }
+
+        private string ExportLibrary()
+        {
+            JsonWriter writer = new JsonWriter();
+            string[] library = null;
+            string[] tags = null;
+            mbApi.Library_QueryFilesEx("domain=Library", ref library);
+
+            MetaDataType[] meta = new MetaDataType[] { MetaDataType.TrackTitle, MetaDataType.TrackNo, MetaDataType.DiscNo, MetaDataType.Album, MetaDataType.Year, MetaDataType.AlbumArtist };
+
+            List<string> artists = new List<string>();
+
+            writer.WriteBeginObject();
+            foreach (var item in library)
             {
-                lock (_syncLock)
+                mbApi.Library_GetFileTags(item, meta, ref tags);
+                if (artists.Find(c => c == tags[5]) == null)
                 {
-                    if (_instance == null)
-                        _instance = new GetLibrary();
-                    return _instance;
+                    writer.WritePropertyName(tags[5]);
+                    GetAlbum(tags[5], ref writer);
+                    writer.WriteEndObject();
+                    writer.WriteValueSeparator();
+                    artists.Add(tags[5]);
                 }
             }
-            set
+            writer.WriteEndObject();
+
+            return writer.ToString();
+        }
+
+        private void GetAlbum(string artist, ref JsonWriter writer)
+        {
+            MetaDataType[] meta = new MetaDataType[] { MetaDataType.TrackTitle, MetaDataType.TrackNo, MetaDataType.DiscNo, MetaDataType.Album, MetaDataType.Year, MetaDataType.AlbumArtist, MetaDataType.Artist };
+            string[] tracks = null;
+            string[] album = null;
+            string[] albumTracks = null;
+            string[] trackInfo = null;
+            string currentAlbum = null;
+            MetaDataType[] albumMeta = new MetaDataType[] { MetaDataType.Album, MetaDataType.Year };
+
+            mbApi.Library_QueryFilesEx("Artist=" + artist, ref tracks);
+            writer.WriteBeginObject();
+            foreach (var track in tracks)
             {
-                lock (_syncLock)
+                mbApi.Library_GetFileTags(track, albumMeta, ref album);
+                if (album[0] != currentAlbum)
                 {
-                    _instance.temp = value.temp;
+                    currentAlbum = album[0];
+                    mbApi.Library_QueryFilesEx("Album=" + album[0], ref albumTracks);
+
+                    writer.WritePropertyName(album[0]);
+                    writer.WriteBeginObject();
+                    writer.WritePropertyName("Year");
+                    writer.WriteString(album[1]);
+                    writer.WriteValueSeparator();
+                    writer.WritePropertyName("tracks");
+                    writer.WriteBeginArray();
+                    foreach (var albumTrack in albumTracks)
+                    {
+                        mbApi.Library_GetFileTags(albumTrack, meta, ref trackInfo);
+                        string length = mbApi.Library_GetFileProperty(albumTrack, FilePropertyType.Duration);
+                        if (trackInfo[5] == artist)
+                        {
+                            BuildTrackJson(trackInfo, length, ref writer);
+                        }
+                    }
+                    writer.WriteEndArray();
+                    writer.WriteEndObject();
+                    writer.WriteValueSeparator();
                 }
             }
         }
 
-        public string Value { get; set; }
-    }
-
-    public class GetLibraryModule : NancyModule
-    {
-        public GetLibraryModule()
+        private void BuildTrackJson(string[] track, string length, ref JsonWriter writer)
         {
-            Get["/library"] = _ => GetLibrary.Instance.Value;
+            writer.WriteBeginObject();
+            writer.WritePropertyName("artist");
+            writer.WriteString(track[6]);
+            writer.WriteValueSeparator();
+            writer.WritePropertyName("length");
+            writer.WriteString(length);
+            writer.WriteValueSeparator();
+            writer.WritePropertyName("name");
+            writer.WriteString(track[0]);
+            writer.WriteValueSeparator();
+            writer.WritePropertyName("number");
+            writer.WriteString(track[1]);
+            writer.WriteEndObject();
+            writer.WriteValueSeparator();
         }
     }
 }

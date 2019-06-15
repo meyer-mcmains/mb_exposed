@@ -1,41 +1,17 @@
 ﻿using Nancy;
+using static MusicBeePlugin.Plugin;
 
 namespace MusicBeePlugin
 {
-    public class GetNowPlaying
+    public class GetNowPlaying : NancyModule
     {
-        private string temp;
-        private static readonly object _syncLock = new object();
-        private static GetNowPlaying _instance;
-
-        public static GetNowPlaying Instance
+        public GetNowPlaying()
         {
-            get
+            Get["/now-playing"] = _ =>
             {
-                lock (_syncLock)
-                {
-                    if (_instance == null)
-                        _instance = new GetNowPlaying();
-                    return _instance;
-                }
-            }
-            set
-            {
-                lock (_syncLock)
-                {
-                    _instance.temp = value.temp;
-                }
-            }
-        }
-
-        public string Value { get; set; }
-    }
-
-    public class GetNowPlayingModule : NancyModule
-    {
-        public GetNowPlayingModule()
-        {
-            Get["/now-playing"] = _ => GetNowPlaying.Instance.Value;
+                MusicBeeApiInterface mbApi = MbApiInstance.Instance.MusicBeeApiInterface;
+                return mbApi.NowPlaying_GetFileTag(MetaDataType.TrackTitle);
+            };
         }
     }
 }

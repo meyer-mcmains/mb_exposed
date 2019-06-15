@@ -81,6 +81,7 @@
     <Reference Include="Costura, Version=4.0.0.0, Culture=neutral, PublicKeyToken=9919ef960d84173d, processorArchitecture=MSIL">
       <HintPath>packages\Costura.Fody.4.0.0\lib\net40\Costura.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Nancy, Version=1.4.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\Nancy.1.4.5\lib\net40\Nancy.dll</HintPath>
     </Reference>
@@ -105,12 +106,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MbApiInstance.cs" />
     <Compile Include="Modules\GetLibrary.cs" />
     <Compile Include="Modules\GetNowPlaying.cs" />
     <Compile Include="Modules\PostPlayPause.cs" />
     <Compile Include="MusicBeeInterface.cs" />
     <Compile Include="BeExposed.cs" />
-    <Compile Include="Modules\PostPlay.cs" />
+    <Compile Include="Modules\PostPlayAlbum.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
