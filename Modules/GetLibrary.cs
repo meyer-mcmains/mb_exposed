@@ -1,5 +1,7 @@
 ﻿using Nancy;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Utf8Json;
 using static MusicBeePlugin.Plugin;
 
@@ -20,21 +22,23 @@ namespace MusicBeePlugin
             string[] library = null;
             string[] tags = null;
             mbApi.Library_QueryFilesEx("domain=Library", ref library);
+            Array.Sort(library, (x, y) => String.Compare(x, y));
 
             MetaDataType[] meta = new MetaDataType[] { MetaDataType.TrackTitle, MetaDataType.TrackNo, MetaDataType.DiscNo, MetaDataType.Album, MetaDataType.Year, MetaDataType.AlbumArtist };
 
             List<string> artists = new List<string>();
 
             writer.WriteBeginObject();
-            foreach (var item in library)
+            foreach (var item in library.Select((value, index) => new { value, index }))
             {
-                mbApi.Library_GetFileTags(item, meta, ref tags);
+                mbApi.Library_GetFileTags(item.value, meta, ref tags);
                 if (artists.Find(c => c == tags[5]) == null)
                 {
                     writer.WritePropertyName(tags[5]);
-                    GetAlbum(tags[5], ref writer);
+                    int trackCount = GetAlbum(tags[5], ref writer);
                     writer.WriteEndObject();
-                    writer.WriteValueSeparator();
+                    if (item.index + trackCount < library.Length)
+                        writer.WriteValueSeparator();
                     artists.Add(tags[5]);
                 }
             }
@@ -43,50 +47,62 @@ namespace MusicBeePlugin
             return writer.ToString();
         }
 
-        private void GetAlbum(string artist, ref JsonWriter writer)
+        private int GetAlbum(string artist, ref JsonWriter writer)
         {
             MetaDataType[] meta = new MetaDataType[] { MetaDataType.TrackTitle, MetaDataType.TrackNo, MetaDataType.DiscNo, MetaDataType.Album, MetaDataType.Year, MetaDataType.AlbumArtist, MetaDataType.Artist };
-            string[] tracks = null;
-            string[] album = null;
-            string[] albumTracks = null;
-            string[] trackInfo = null;
-            string currentAlbum = null;
             MetaDataType[] albumMeta = new MetaDataType[] { MetaDataType.Album, MetaDataType.Year };
+            List<string> albums = new List<string>();
+            List<string> albumYears = new List<string>();
+            string[] albumInfo = null;
+            string[] albumTracks = null;
+            string[] tracks = null;
+            string[] trackInfo = null;
 
             mbApi.Library_QueryFilesEx("Artist=" + artist, ref tracks);
             writer.WriteBeginObject();
-            foreach (var track in tracks)
-            {
-                mbApi.Library_GetFileTags(track, albumMeta, ref album);
-                if (album[0] != currentAlbum)
-                {
-                    currentAlbum = album[0];
-                    mbApi.Library_QueryFilesEx("Album=" + album[0], ref albumTracks);
+            int totalTracks = 0;
 
-                    writer.WritePropertyName(album[0]);
-                    writer.WriteBeginObject();
-                    writer.WritePropertyName("Year");
-                    writer.WriteString(album[1]);
-                    writer.WriteValueSeparator();
-                    writer.WritePropertyName("tracks");
-                    writer.WriteBeginArray();
-                    foreach (var albumTrack in albumTracks)
-                    {
-                        mbApi.Library_GetFileTags(albumTrack, meta, ref trackInfo);
-                        string length = mbApi.Library_GetFileProperty(albumTrack, FilePropertyType.Duration);
-                        if (trackInfo[5] == artist)
-                        {
-                            BuildTrackJson(trackInfo, length, ref writer);
-                        }
-                    }
-                    writer.WriteEndArray();
-                    writer.WriteEndObject();
-                    writer.WriteValueSeparator();
+            foreach (var track in tracks.Select((value, index) => new { value, index }))
+            {
+                mbApi.Library_GetFileTags(track.value, albumMeta, ref albumInfo);
+                if (!albums.Contains(albumInfo[0]))
+                {
+                    albums.Add(albumInfo[0]);
+                    albumYears.Add(albumInfo[1]);
                 }
             }
+
+            foreach (var singleAlbum in albums.Select((value, index) => new { value, index }))
+            {
+                mbApi.Library_QueryFilesEx($"Artist={artist}\0Album={singleAlbum.value}", ref albumTracks);
+                Array.Reverse(albumTracks);
+                totalTracks += albumTracks.Length;
+
+                writer.WritePropertyName(singleAlbum.value);
+                writer.WriteBeginObject();
+                writer.WritePropertyName("year");
+                writer.WriteString(albumYears[singleAlbum.index]);
+                writer.WriteValueSeparator();
+                writer.WritePropertyName("tracks");
+                writer.WriteBeginArray();
+
+                System.Array.Reverse(albumTracks);
+                foreach (var albumTrack in albumTracks.Select((value, index) => new { value, index }))
+                {
+                    mbApi.Library_GetFileTags(albumTrack.value, meta, ref trackInfo);
+                    string length = mbApi.Library_GetFileProperty(albumTrack.value, FilePropertyType.Duration);
+                    BuildTrackJson(trackInfo, length, albumTrack.index != albumTracks.Length - 1, ref writer);
+                }
+                writer.WriteEndArray();
+                writer.WriteEndObject();
+                if (singleAlbum.index < albums.Count - 1)
+                    writer.WriteValueSeparator();
+            }
+
+            return totalTracks;
         }
 
-        private void BuildTrackJson(string[] track, string length, ref JsonWriter writer)
+        private void BuildTrackJson(string[] track, string length, bool writeSeparator, ref JsonWriter writer)
         {
             writer.WriteBeginObject();
             writer.WritePropertyName("artist");
@@ -101,7 +117,8 @@ namespace MusicBeePlugin
             writer.WritePropertyName("number");
             writer.WriteString(track[1]);
             writer.WriteEndObject();
-            writer.WriteValueSeparator();
+            if (writeSeparator)
+                writer.WriteValueSeparator();
         }
     }
 }
