@@ -1,4 +1,5 @@
-﻿using System.Runtime.Serialization;
+﻿using System;
+using System.Runtime.Serialization;
 
 namespace MusicBeePlugin
 {
@@ -13,6 +14,9 @@ namespace MusicBeePlugin
 
     public partial class Album
     {
+        [DataMember(Name = "albumID")]
+        public string AlbumID { get; set; } = Guid.NewGuid().ToString();
+
         [DataMember(Name = "title")]
         public string Title { get; set; }
 
@@ -28,6 +32,9 @@ namespace MusicBeePlugin
 
     public partial class Track
     {
+        [DataMember(Name = "trackID")]
+        public string TrackID { get; set; } = Guid.NewGuid().ToString();
+
         [DataMember(Name = "artist")]
         public string Artist { get; set; }
 
