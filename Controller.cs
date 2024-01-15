@@ -14,13 +14,14 @@ namespace MusicBeePlugin.Controller
 {
     public sealed class Playback : WebApiController
     {
+        private Plugin.MusicBeeApiInterface mbApi = MbApiInstance.Instance.MusicBeeApiInterface;
+
         // Pause or Play the now playing track
         // This will respond to
         // POST http://localhost:1200/api/play-pause
         [Route(HttpVerbs.Post, "/play-pause")]
         public string PostPlayPause()
         {
-            Plugin.MusicBeeApiInterface mbApi = MbApiInstance.Instance.MusicBeeApiInterface;
             mbApi.Player_PlayPause();
             return mbApi.Player_GetPlayState().ToString();
         }
@@ -31,11 +32,19 @@ namespace MusicBeePlugin.Controller
         [Route(HttpVerbs.Post, "/play-album")]
         public void PostPlayAlbum([FormField] string artist, [FormField] string album)
         {
-            Plugin.MusicBeeApiInterface mbApi = MbApiInstance.Instance.MusicBeeApiInterface;
             string[] albumRef = null;
             mbApi.Library_QueryFilesEx($"Artist={artist}\0Album={album}", out albumRef);
             mbApi.NowPlayingList_Clear();
             mbApi.NowPlayingList_QueueFilesNext(albumRef);
+            mbApi.Player_PlayNextTrack();
+        }
+
+        // Play the next track
+        // This will respond to
+        // POST http://localhost:1200/api/next-track
+        [Route(HttpVerbs.Post, "/next-track")]
+        public void NextTrack()
+        {
             mbApi.Player_PlayNextTrack();
         }
     }
