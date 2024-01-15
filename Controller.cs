@@ -47,6 +47,15 @@ namespace MusicBeePlugin.Controller
         {
             mbApi.Player_PlayNextTrack();
         }
+
+        // Play the previous track
+        // This will respond to
+        // POST http://localhost:1200/api/previous-track
+        [Route(HttpVerbs.Post, "/previous-track")]
+        public void PreviousTrack()
+        {
+            mbApi.Player_PlayPreviousTrack();
+        }
     }
 
     public sealed class Artwork : WebApiController
