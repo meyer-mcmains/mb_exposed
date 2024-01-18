@@ -142,7 +142,7 @@ namespace MusicBeePlugin.Controller
             string[] trackInfo = null;
 
             // Get all Tracks that belong to an artist
-            mbApi.Library_QueryFilesEx($"Artist={artist}", out tracks);
+            mbApi.Library_QueryFilesEx($"ALbumArtist={artist}", out tracks);
             List<string> albumTitles = new List<string>();
 
             // Use list of tracks to find all albums that belong to an artist
@@ -158,7 +158,7 @@ namespace MusicBeePlugin.Controller
             // Use list of albums to get tracks for each album
             foreach (var singleAlbum in albumTitles.Select((value, index) => new { value, index }))
             {
-                mbApi.Library_QueryFilesEx($"Artist={artist}\0Album={singleAlbum.value}", out tracks);
+                mbApi.Library_QueryFilesEx($"AlbumArtist={artist}\0Album={singleAlbum.value}", out tracks);
                 mbApi.Library_GetFileTags(tracks[0], albumMeta, out albumInfo);
                 List<Track> albumTracks = new List<Track>();
 
