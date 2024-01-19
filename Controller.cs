@@ -32,10 +32,38 @@ namespace MusicBeePlugin.Controller
         [Route(HttpVerbs.Post, "/play-album")]
         public void PostPlayAlbum([FormField] string artist, [FormField] string album)
         {
-            string[] albumRef = null;
-            mbApi.Library_QueryFilesEx($"Artist={artist}\0Album={album}", out albumRef);
+            string[] tracks;
+            string[] trackInfo;
+            MetaDataType[] meta = new MetaDataType[] { MetaDataType.DiscNo, MetaDataType.TrackNo };
+            mbApi.Library_QueryFilesEx($"AlbumArtist={artist}\0Album={album}", out tracks);
+
+            var albumTracks = new List<(string SourceFile, int DiskNo, int TrackNo)>();
+
+            // Use the list of tracks to get information for each track
+            foreach (var albumTrack in tracks)
+            {
+                mbApi.Library_GetFileTags(albumTrack, meta, out trackInfo);
+                // not all tracks have a disk number
+                if (trackInfo[0] == "")
+                {
+                    albumTracks.Add((albumTrack, 0, Convert.ToInt16(trackInfo[1])));
+                }
+                else
+                {
+                    albumTracks.Add((albumTrack, Convert.ToInt16(trackInfo[0]), Convert.ToInt16(trackInfo[1])));
+                }
+            }
+
+            // Sort to ensure correct oarder of disks and tracks
+            albumTracks.Sort((x, y) => x.DiskNo == y.DiskNo
+                ? x.TrackNo.CompareTo(y.TrackNo)
+                : (x.DiskNo < y.DiskNo ? -1 : 1));
+
+
+            var trackToQueue = albumTracks.Select(track => track.SourceFile).ToArray();
+
             mbApi.NowPlayingList_Clear();
-            mbApi.NowPlayingList_QueueFilesNext(albumRef);
+            mbApi.NowPlayingList_QueueFilesNext(trackToQueue);
             mbApi.Player_PlayNextTrack();
         }
 
