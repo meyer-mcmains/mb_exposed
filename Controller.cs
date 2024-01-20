@@ -6,6 +6,8 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using static MusicBeePlugin.Plugin;
@@ -108,15 +110,21 @@ namespace MusicBeePlugin.Controller
 
             if (thumbnail)
             {
-                Bitmap bitmap;
-                using (var memoryStream = new MemoryStream(image))
-                {
-                    bitmap = new Bitmap(memoryStream);
-                    Image thumbnailImage = bitmap.GetThumbnailImage(400, 400, null, IntPtr.Zero);
+                using var memoryStream = new MemoryStream(image);
+                using var originalImage = new Bitmap(memoryStream);
 
-                    ImageConverter converter = new ImageConverter();
-                    return (byte[])converter.ConvertTo(thumbnailImage, typeof(byte[]));
-                }
+                var resized = new Bitmap(400, 400);
+                using var graphics = Graphics.FromImage(resized);
+
+                graphics.CompositingQuality = CompositingQuality.HighSpeed;
+                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                graphics.CompositingMode = CompositingMode.SourceCopy;
+                graphics.DrawImage(originalImage, 0, 0, 400, 400);
+
+                using var stream = new MemoryStream();
+                resized.Save(stream, ImageFormat.Jpeg);
+
+                return stream.ToArray();
             }
 
             return image;
