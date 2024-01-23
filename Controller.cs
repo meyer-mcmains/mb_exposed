@@ -203,15 +203,18 @@ namespace MusicBeePlugin.Controller
                 {
                     mbApi.Library_GetFileTags(albumTrack.value, meta, out trackInfo);
                     string length = mbApi.Library_GetFileProperty(albumTrack.value, FilePropertyType.Duration);
-                    // not all tracks have a disk number
-                    if (trackInfo[2] != "")
+
+                    Track track = new Track
                     {
-                        albumTracks.Add(new Track { Artist = trackInfo[6], Disk = Convert.ToInt16(trackInfo[2]), Length = length, Name = trackInfo[0], Number = Convert.ToInt16(trackInfo[1]), Path = albumTrack.value });
-                    }
-                    else
-                    {
-                        albumTracks.Add(new Track { Artist = trackInfo[6], Disk = null, Length = length, Name = trackInfo[0], Number = Convert.ToInt16(trackInfo[1]), Path = albumTrack.value });
-                    }
+                        Artist = trackInfo[6],
+                        Disk = trackInfo[2] == "" ? null : Convert.ToInt16(trackInfo[2]),
+                        Length = length,
+                        Title = trackInfo[0],
+                        Number = Convert.ToInt16(trackInfo[1]),
+                        Uri = albumTrack.value
+                    };
+
+                    albumTracks.Add(track);
                 }
                 // Sort to ensure correct order of disks and tracks
                 albumTracks.Sort((x, y) => x.Disk == y.Disk ?
