@@ -34,7 +34,7 @@ namespace MusicBeePlugin.Model
 
         public string Length { get; set; }
 
-        public long Duration { get; set; }
+        public long Duration { get; set; } = 0;
 
         public string Title { get; set; }
 
