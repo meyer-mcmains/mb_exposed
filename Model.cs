@@ -48,19 +48,11 @@ namespace MusicBeePlugin.Model
     {
         public string Notification { get; set; }
 
-        public string SourceFile { get; set; }
-
         public int Position { get; set; }
-
-        public int Duration { get; set; }
 
         public string PlayState { get; set; }
 
-        public string Artist { get; set; }
-
-        public string Album { get; set; }
-
-        public string Track { get; set; }
+        public Track Track { get; set; }
 
         public float[] SoundGraph { get; set; }
     }
