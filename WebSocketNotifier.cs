@@ -20,10 +20,9 @@ public class WebSocketNotifier : WebSocketModule
         PlayState playstate = mbApi.Player_GetPlayState();
         if (playstate == PlayState.Playing || playstate == PlayState.Paused)
         {
-            string sourceFile = mbApi.NowPlayingList_GetFileProperty(0, FilePropertyType.Url);
-            // when a client connects and an albums is already playing specify the playing tracks have chanced so the client
-            // can act accordingly (update now playing track etc)
-            UpdateMessage(sourceFile, NotificationType.PlayingTracksChanged);
+            // when a client connects and an albums is already playing, dispatch a message
+            // so the client can act accordingly (update now playing track etc)
+            UpdateMessage(NotificationType.PlayingTracksChanged);
         }
 
         return Task.CompletedTask;
