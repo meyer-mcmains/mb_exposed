@@ -90,12 +90,12 @@ namespace MusicBeePlugin
                         RunWebServerAsync(ctSource.Token);
                     }
 
-                    webSocketNotifier.UpdateMessage(sourceFileUrl, type);
+                    webSocketNotifier.UpdateMessage(type);
                     break;
 
                 case NotificationType.TrackChanged:
                 case NotificationType.PlayStateChanged:
-                    webSocketNotifier.UpdateMessage(sourceFileUrl, type);
+                    webSocketNotifier.UpdateMessage(type);
                     break;
             }
         }

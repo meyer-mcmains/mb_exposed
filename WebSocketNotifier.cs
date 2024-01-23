@@ -33,26 +33,39 @@ public class WebSocketNotifier : WebSocketModule
         return Task.CompletedTask;
     }
 
-    public void UpdateMessage(string sourceFile, NotificationType type)
+    public void UpdateMessage(NotificationType type)
     {
         string playState = mbApi.Player_GetPlayState().ToString();
         int position = mbApi.Player_GetPosition();
         int duration = mbApi.NowPlaying_GetDuration();
+        string url = mbApi.NowPlaying_GetFileUrl();
 
-        MetaDataType[] fields = [MetaDataType.TrackTitle, MetaDataType.Album, MetaDataType.AlbumArtist];
+        MetaDataType[] fields = [MetaDataType.TrackTitle, MetaDataType.Album, MetaDataType.AlbumArtist, MetaDataType.DiscNo, MetaDataType.TrackNo];
         string[] tags;
         mbApi.NowPlaying_GetFileTags(fields, out tags);
+        string length = mbApi.Library_GetFileProperty(url, FilePropertyType.Duration);
 
-        Message message = new Message { Notification = type.ToString(), SourceFile = sourceFile, PlayState = playState, Position = position, Duration = duration, Track = "", Album = "", Artist = "" };
+        // Track track = new Track { Title = tags[0], Album = tags[1], Artist = tags[2],  };
+
+        Message message = new Message { Notification = type.ToString(), PlayState = playState, Position = position, Track = null };
 
         if (tags != null && Array.Exists(tags, element => element != null))
         {
-            message.Track = tags[0];
-            message.Album = tags[1];
-            message.Artist = tags[2];
+            Track track = new Track
+            {
+                Title = tags[0],
+                Album = tags[1],
+                Artist = tags[2],
+                Duration = duration,
+                Length = length,
+                Disk = tags[3] == "" ? null : Convert.ToInt16(tags[3]),
+                Number = Convert.ToInt16(tags[4]),
+                Uri = url
+            };
+
+            message.Track = track;
         }
 
-        //lastMessage = new Message { Notification = type.ToString(), SourceFile = sourceFile, PlayState = playState, Position = position, Duration = duration, SoundGraph = retrieveGraph ? currentSoundGraph : new float[0], Track = tags[0], Album = tags[1], Artist = tags[2] };
         BroadcastAsync(JsonConvert.SerializeObject(message));
     }
 }
