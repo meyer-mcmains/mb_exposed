@@ -24,7 +24,9 @@ namespace MusicBeePlugin.Model
 
     public partial class Track
     {
-        public string TrackId { get; set; } = Guid.NewGuid().ToString();
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        public string Album { get; set; }
 
         public string Artist { get; set; }
 
@@ -32,11 +34,13 @@ namespace MusicBeePlugin.Model
 
         public string Length { get; set; }
 
-        public string Name { get; set; }
+        public long Duration { get; set; }
+
+        public string Title { get; set; }
 
         public long Number { get; set; }
 
-        public string Path { get; set; }
+        public string Uri { get; set; }
     }
 
 
