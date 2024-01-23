@@ -207,6 +207,7 @@ namespace MusicBeePlugin.Controller
                     Track track = new Track
                     {
                         Artist = trackInfo[6],
+                        Album = singleAlbum.value,
                         Disk = trackInfo[2] == "" ? null : Convert.ToInt16(trackInfo[2]),
                         Length = length,
                         Title = trackInfo[0],
