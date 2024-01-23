@@ -11,7 +11,7 @@ namespace MusicBeePlugin.Model
 
     public partial class Album
     {
-        public string AlbumId { get; set; } = Guid.NewGuid().ToString();
+        public string Id { get; set; } = Guid.NewGuid().ToString();
 
         public string Title { get; set; }
 
